@@ -4,69 +4,163 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ED Inventory</title>
-  <!-- Ask search engines NOT to index -->
+  <!-- Discourage search engine indexing -->
   <meta name="robots" content="noindex, nofollow" />
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f8f9fa; }
-    h1 { text-align: center; margin: 0 0 12px; }
-    #search { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
-    .item { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; margin: 10px 0; padding: 10px 14px; }
-    .item strong { color: #0077c8; }
-    #report { display: inline-block; background: #c62828; color: #fff; padding: 6px 10px; font-size: 14px; border-radius: 4px; text-decoration: none; margin-top: 12px; font-weight: 600; }
-    #report:hover { background: #b71c1c; }
-    .footer { text-align: center; margin-top: 14px; }
+    :root{
+      --bg:#f8f9fa; --card:#fff; --txt:#222; --muted:#666; --accent:#0077c8; --border:#e5e5e5; --danger:#c62828; --danger-h:#b71c1c;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--bg); color:var(--txt)}
+    .wrap{max-width:800px; margin:0 auto; padding:16px}
+    h1{margin:0 0 12px; text-align:center}
+    #search{width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:6px}
+    .controls{display:flex; gap:8px; align-items:center; margin:10px 0 6px}
+    .toggle-btn{
+      padding:6px 10px; font-size:14px; border:1px solid #ccc; border-radius:6px; background:#fff; cursor:pointer;
+    }
+    .toggle-btn:active{ transform: translateY(1px); }
+    #results .item{
+      background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin:10px 0;
+      box-shadow:0 1px 3px rgba(0,0,0,.04)
+    }
+    .item strong{color:var(--accent)}
+    .muted{color:var(--muted); font-size:.95rem}
+    .footer{display:flex; justify-content:center; margin:14px 0 6px}
+    #report{
+      display:inline-block; background:var(--danger); color:#fff; padding:6px 10px; font-size:14px; border-radius:4px;
+      text-decoration:none; font-weight:600
+    }
+    #report:hover{ background:var(--danger-h) }
+    @media (max-width:480px){
+      h1{font-size:1.4rem}
+      #search{padding:10px; font-size:1rem}
+      .item{padding:10px 12px}
+    }
   </style>
 </head>
 <body>
-  <h1>ED Inventory</h1>
-  <input id="search" type="text" placeholder="Search for an item..." />
-  <div id="results">Loading inventory…</div>
-  <div class="footer">
-    <a id="report" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report Issue">&#9888; Report</a>
+  <div class="wrap">
+    <h1>ED Inventory</h1>
+
+    <input id="search" type="text" placeholder="Start typing item name…" />
+
+    <div class="controls">
+      <button id="toggleView" class="toggle-btn" type="button">Show full details</button>
+      <span id="count" class="muted" aria-live="polite"></span>
+    </div>
+
+    <div id="results">Loading inventory…</div>
+
+    <div class="footer">
+      <a id="report" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report shortages, expirations, etc.">&#9888; Report Stock Issues</a>
+    </div>
   </div>
 
-  <!-- PapaParse for robust CSV parsing -->
+  <!-- Robust CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    const CSV_URL = './directory.csv'; // same repo, avoids CORS
-    const results = document.getElementById('results');
-    const search = document.getElementById('search');
+    const CSV_URL = './directory.csv'; // same folder as this HTML
+    const resultsEl = document.getElementById('results');
+    const searchEl  = document.getElementById('search');
+    const toggleBtn = document.getElementById('toggleView');
+    const countEl   = document.getElementById('count');
+
     let rows = [];
+    let viewMode = localStorage.getItem('viewMode') || 'compact'; // 'compact' | 'full'
+
+    // Helpers to find columns by name pattern
+    function getColumn(obj, regex, fallbackKey) {
+      return Object.keys(obj).find(k => regex.test(k)) || fallbackKey;
+    }
+
+    // Compact: Item Name + Location only (Location header required/preferred)
+    function renderCompact(r) {
+      const keys = Object.keys(r);
+      const nameKey = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
+      const locKey  = getColumn(r, /^location$/i, keys.find(k => k !== nameKey) || keys[1]);
+
+      const name = (r[nameKey] || '').toString().trim();
+      const loc  = (r[locKey]  || '').toString().trim();
+
+      return `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
+    }
+
+    // Full: all non-empty columns, with icons for known fields
+    function renderFull(r) {
+      const nonEmptyKeys = Object.keys(r).filter(k => (r[k] ?? '').toString().trim() !== '');
+      if (!nonEmptyKeys.length) return '';
+
+      const nameKey = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
+      let html = `<strong>${r[nameKey]}</strong><br/>`;
+
+      nonEmptyKeys.forEach(k => {
+        if (k === nameKey) return;
+        const val = r[k];
+
+        if (/^location$/i.test(k)) {
+          html += `📍 ${val}<br/>`;
+        } else if (/note/i.test(k)) {
+          html += `📝 ${val}<br/>`;
+        } else if (/exp(ir(y|ation)|date)/i.test(k)) {
+          html += `⏳ ${k}: ${val}<br/>`;
+        } else if (/stock|qty|quantity|count/i.test(k)) {
+          html += `📦 ${k}: ${val}<br/>`;
+        } else {
+          html += `${k}: ${val}<br/>`;
+        }
+      });
+
+      return html;
+    }
 
     function render(list) {
-      results.innerHTML = '';
-      if (!list.length) { results.textContent = 'No results found.'; return; }
+      resultsEl.innerHTML = '';
+      countEl.textContent = list.length ? `${list.length} item${list.length!==1?'s':''}` : '';
+      if (!list.length) { resultsEl.textContent = 'No results found.'; return; }
+
       list.forEach(r => {
-        const name = (r['Item Name'] || r['Item'] || r[0] || '').trim();
-        const loc  = (r['Location']  || r[1] || '').trim();
-        const notes = (r['Additional Notes'] || '').trim();
         const div = document.createElement('div');
         div.className = 'item';
-        div.innerHTML = `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}${notes ? `<br/> Notes ${notes}` : ''}`;
-        results.appendChild(div);
+        div.innerHTML = (viewMode === 'full') ? renderFull(r) : renderCompact(r);
+        resultsEl.appendChild(div);
       });
     }
 
-    function filter(q) {
+    function filterRows(q) {
       const ql = q.toLowerCase();
-      const filtered = rows.filter(r => ((r['Item Name']||r['Item']||r[0]||'') + ' ' + (r['Location']||r[1]||'')).toLowerCase().includes(ql));
-      render(filtered);
+      return rows.filter(r => Object.values(r).join(' ').toLowerCase().includes(ql));
     }
 
-    // Load CSV (bust cache)
+    function updateToggleText() {
+      toggleBtn.textContent = (viewMode === 'full') ? 'Show compact view' : 'Show full details';
+    }
+
+    // Load CSV (with cache-buster)
     fetch(CSV_URL + '?v=' + Date.now())
       .then(r => r.text())
       .then(text => {
-        const parsed = Papa.parse(text, { header: true });
-        rows = parsed.data.filter(x => Object.keys(x).length > 0); // drop empty lines
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        rows = parsed.data;
         render(rows);
       })
-      .catch(() => { results.textContent = 'Failed to load inventory.'; });
+      .catch(() => { resultsEl.textContent = 'Failed to load inventory.'; });
 
-    search.addEventListener('input', e => filter(e.target.value));
+    // Search as you type
+    searchEl.addEventListener('input', (e) => {
+      const filtered = filterRows(e.target.value);
+      render(filtered);
+    });
+
+    // Toggle compact/full
+    updateToggleText();
+    toggleBtn.addEventListener('click', () => {
+      viewMode = (viewMode === 'full') ? 'compact' : 'full';
+      localStorage.setItem('viewMode', viewMode);
+      const q = searchEl.value || '';
+      render(q ? filterRows(q) : rows);
+      updateToggleText();
+    });
   </script>
 </body>
 </html>
-
-
-
