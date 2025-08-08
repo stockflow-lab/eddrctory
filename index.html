@@ -39,6 +39,7 @@
       list.forEach(r => {
         const name = (r['Item Name'] || r['Item'] || r[0] || '').trim();
         const loc  = (r['Location']  || r[1] || '').trim();
+        const notes = (r['Additional Notes'] || '').trim();
         const div = document.createElement('div');
         div.className = 'item';
         div.innerHTML = `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
@@ -66,3 +67,4 @@
   </script>
 </body>
 </html>
+
