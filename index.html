@@ -42,7 +42,7 @@
         const notes = (r['Additional Notes'] || '').trim();
         const div = document.createElement('div');
         div.className = 'item';
-        div.innerHTML = `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
+        div.innerHTML = `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}${notes ? `<br/> Notes ${notes}` : ''}`;
         results.appendChild(div);
       });
     }
@@ -67,5 +67,6 @@
   </script>
 </body>
 </html>
+
 
 
