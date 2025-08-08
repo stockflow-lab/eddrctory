@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ED Inventory</title>
+  <!-- Ask search engines NOT to index -->
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f8f9fa; }
+    h1 { text-align: center; margin: 0 0 12px; }
+    #search { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+    .item { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; margin: 10px 0; padding: 10px 14px; }
+    .item strong { color: #0077c8; }
+    #report { display: inline-block; background: #c62828; color: #fff; padding: 6px 10px; font-size: 14px; border-radius: 4px; text-decoration: none; margin-top: 12px; font-weight: 600; }
+    #report:hover { background: #b71c1c; }
+    .footer { text-align: center; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <h1>ED Inventory</h1>
+  <input id="search" type="text" placeholder="Search for an item..." />
+  <div id="results">Loading inventory…</div>
+  <div class="footer">
+    <a id="report" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report Issue">&#9888; Report</a>
+  </div>
+
+  <!-- PapaParse for robust CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const CSV_URL = './ED Directory V1.csv'; // same repo, avoids CORS
+    const results = document.getElementById('results');
+    const search = document.getElementById('search');
+    let rows = [];
+
+    function render(list) {
+      results.innerHTML = '';
+      if (!list.length) { results.textContent = 'No results found.'; return; }
+      list.forEach(r => {
+        const name = (r['Item Name'] || r['Item'] || r[0] || '').trim();
+        const loc  = (r['Location']  || r[1] || '').trim();
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
+        results.appendChild(div);
+      });
+    }
+
+    function filter(q) {
+      const ql = q.toLowerCase();
+      const filtered = rows.filter(r => ((r['Item Name']||r['Item']||r[0]||'') + ' ' + (r['Location']||r[1]||'')).toLowerCase().includes(ql));
+      render(filtered);
+    }
+
+    // Load CSV (bust cache)
+    fetch(CSV_URL + '?v=' + Date.now())
+      .then(r => r.text())
+      .then(text => {
+        const parsed = Papa.parse(text, { header: true });
+        rows = parsed.data.filter(x => Object.keys(x).length > 0); // drop empty lines
+        render(rows);
+      })
+      .catch(() => { results.textContent = 'Failed to load inventory.'; });
+
+    search.addEventListener('input', e => filter(e.target.value));
+  </script>
+</body>
+</html>
