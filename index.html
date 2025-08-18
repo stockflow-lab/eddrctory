@@ -37,7 +37,7 @@
     }
     .item strong{color:var(--accent)}
 
-    /* Dialogs (Noticeboard + Legend) */
+    /* Legend dialog */
     dialog{
       border:none; border-radius:10px; padding:0; width:min(680px, 94vw); max-height:80vh;
       box-shadow:0 10px 30px rgba(0,0,0,.25);
@@ -45,28 +45,27 @@
     dialog::backdrop{ background:rgba(0,0,0,.35); }
     .dlg-box{ margin:0; padding:16px 16px 12px 16px; }
     .dlg-box h3{ margin:0 0 6px 0; }
-    .dlg-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
-    .dlg-close{
-      background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer;
-    }
-    .dlg-close:hover{ filter:brightness(.95); }
-
-    /* Noticeboard content */
-    .notice-meta{ color:var(--muted); font-size:.9rem; margin:2px 0 8px; }
-    .notice-content{
-      line-height:1.4; color:#333; background:#fff; border:1px solid #eee; border-radius:8px;
-      padding:12px; max-height:55vh; overflow:auto;
-    }
-    .notice-content h1, .notice-content h2, .notice-content h3{ margin-top:1em; }
-    .notice-content ul{ padding-left:1.2em; }
-
-    /* Legend list */
     .legend-list{ margin:8px 0 16px 0; padding-left:0; list-style:none; max-height:55vh; overflow:auto; }
     .legend-list li{ padding:6px 0; border-bottom:1px solid #eee; }
     .legend-list code{
       background:#eef3f7; padding:2px 6px; border-radius:4px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
+    .dlg-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+    .dlg-close{
+      background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer;
+    }
+    .dlg-close:hover{ filter:brightness(.95); }
+
+    /* Toast */
+    #toast{
+      visibility:hidden; opacity:0; min-width:220px; max-width:90vw;
+      background:#323232; color:#fff; text-align:center; border-radius:6px;
+      padding:10px 16px; position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+      transition:opacity .25s, visibility 0s linear .25s; z-index:1000;
+      box-shadow:0 4px 12px rgba(0,0,0,.25);
+    }
+    #toast.show{ visibility:visible; opacity:1; transition:opacity .25s; }
 
     @media (max-width:480px){
       h1{font-size:1.4rem}
@@ -81,29 +80,16 @@
 
     <input id="search" type="text" placeholder="Start typing item name…" />
 
-    <!-- Controls: Toggle, Noticeboard, Legend, Refresh, Report, Count -->
+    <!-- Controls: Toggle, Legend, Refresh, Report, Count -->
     <div class="controls">
       <button id="toggleView" class="btn" type="button">Show full details</button>
-      <button id="noticeBtn" class="btn" type="button" onclick="showNotices()" title="View announcements">Noticeboard</button>
       <button id="legendBtn" class="btn" type="button" onclick="showLegend()" title="Location legend">Legend</button>
-      <button id="refreshBtn" class="btn" type="button" onclick="refreshData()" title="Fetch latest CSV">↻</button>
-      <a id="report" class="btn btn-danger" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report stock issue">&#9888; Report Stock Issues</a>
+      <button id="refreshBtn" class="btn" type="button" onclick="refreshData()" title="Fetch latest CSV">↻ Refresh data</button>
+      <a id="report" class="btn btn-danger" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report stock issue">&#9888; Report</a>
       <span id="count" class="muted" aria-live="polite"></span>
     </div>
 
     <div id="results">Loading inventory…</div>
-
-    <!-- Noticeboard Dialog -->
-    <dialog id="noticeDialog">
-      <form method="dialog" class="dlg-box">
-        <h3>Noticeboard</h3>
-        <div class="notice-meta">Last updated: <span id="noticeUpdated">—</span></div>
-        <div id="noticeContent" class="notice-content">Loading…</div>
-        <div class="dlg-actions">
-          <button class="dlg-close" value="close" aria-label="Close noticeboard">Close</button>
-        </div>
-      </form>
-    </dialog>
 
     <!-- Legend Dialog -->
     <dialog id="legendDialog">
@@ -129,14 +115,15 @@
     </dialog>
   </div>
 
-  <!-- Libraries -->
+  <!-- Toast element -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Library -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script>
-    // ===== Config files (same folder) =====
+    // ===== Config (same folder) =====
     const CSV_URL = './directory.csv';
-    const NOTICES_URL = './notices.md';
 
     const resultsEl = document.getElementById('results');
     const searchEl  = document.getElementById('search');
@@ -145,7 +132,15 @@
 
     let rows = [];
     let viewMode = localStorage.getItem('viewMode') || 'compact'; // 'compact' | 'full'
-    let noticesLoaded = false;
+
+    // Toast helper
+    function showToast(message){
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => t.classList.remove('show'), 1800);
+    }
 
     // Helpers to find columns by name pattern
     function getColumn(obj, regex, fallbackKey) {
@@ -216,11 +211,13 @@
     // Refresh button
     function refreshData(){
       loadCSV()
-        .catch(() => { alert('Could not refresh data right now.'); });
+        .then(() => showToast('Data updated'))
+        .catch(() => showToast('Refresh failed – try again'));
     }
 
     // Start
-    loadCSV().catch(() => { resultsEl.textContent = 'Failed to load inventory.'; });
+    loadCSV()
+      .catch(() => { resultsEl.textContent = 'Failed to load inventory.'; });
 
     // Search as you type
     searchEl.addEventListener('input', (e) => {
@@ -236,71 +233,24 @@
       const q = searchEl.value || '';
       render(q ? filterRows(q) : rows);
       updateToggleText();
+      showToast(viewMode === 'full' ? 'Showing full details' : 'Showing compact view');
     });
 
-    // ===== Noticeboard (Markdown file with timestamp) =====
-    function formatLocal(dt) {
-      try { return new Date(dt).toLocaleString(); } catch { return ''; }
-    }
-    function extractUpdatedFromMarkdown(md) {
-      const m = md.match(/^\s*(?:_|[*])?\s*Last\s+updated:\s*(.+)$/im);
-      return m ? m[1].trim() : '';
-    }
-
-    function showNotices(){
-      const dlg = document.getElementById('noticeDialog');
-      const box = document.getElementById('noticeContent');
-      const updatedEl = document.getElementById('noticeUpdated');
-
-      if (!dlg.showModal) {
-        alert('Noticeboard requires a modern browser.');
-        return;
-      }
-
-      if (!noticesLoaded) {
-        fetch(NOTICES_URL + '?v=' + Date.now())
-          .then(r => {
-            const headerLM = r.headers.get('Last-Modified') || '';
-            return r.text().then(md => ({ md, headerLM }));
-          })
-          .then(({ md, headerLM }) => {
-            const fromFile = extractUpdatedFromMarkdown(md);
-            const stamp = fromFile || formatLocal(headerLM) || formatLocal(Date.now());
-            updatedEl.textContent = stamp || '—';
-            box.innerHTML = marked.parse(md || '_No current notices._');
-            noticesLoaded = true;
-            dlg.showModal();
-          })
-          .catch(() => {
-            updatedEl.textContent = '—';
-            box.textContent = 'Unable to load notices at this time.';
-            dlg.showModal();
-          });
-      } else {
-        dlg.showModal();
-      }
-    }
-
-    // Close dialogs by clicking backdrop (outside the content)
-    ;(function(){
-      ['noticeDialog','legendDialog'].forEach(id => {
-        const dlg = document.getElementById(id);
-        if (!dlg) return;
-        dlg.addEventListener('click', (e) => {
-          const rect = dlg.getBoundingClientRect();
-          const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
-                        e.clientY >= rect.top && e.clientY <= rect.bottom;
-          if (!inside) dlg.close();
-        });
-      });
-    })();
-
-    // Legend open
+    // Legend open + backdrop click-to-close
     function showLegend(){
       const dlg = document.getElementById('legendDialog');
       if (dlg && dlg.showModal) dlg.showModal();
     }
+    (function(){
+      const dlg = document.getElementById('legendDialog');
+      if (!dlg) return;
+      dlg.addEventListener('click', (e) => {
+        const rect = dlg.getBoundingClientRect();
+        const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                       e.clientY >= rect.top && e.clientY <= rect.bottom;
+        if (!inside) dlg.close();
+      });
+    })();
   </script>
 </body>
 </html>
-
