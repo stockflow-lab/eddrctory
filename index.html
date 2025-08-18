@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ED Inventory</title>
+  <title>ED Stock Directory</title>
   <!-- Discourage search engine indexing -->
   <meta name="robots" content="noindex, nofollow" />
   <style>
@@ -76,7 +76,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>ED Inventory</h1>
+    <h1>ED Stock Directory</h1>
 
     <input id="search" type="text" placeholder="Start typing item name…" />
 
@@ -84,8 +84,8 @@
     <div class="controls">
       <button id="toggleView" class="btn" type="button">Show full details</button>
       <button id="legendBtn" class="btn" type="button" onclick="showLegend()" title="Location legend">Legend</button>
-      <button id="refreshBtn" class="btn" type="button" onclick="refreshData()" title="Fetch latest CSV">↻ Refresh data</button>
-      <a id="report" class="btn btn-danger" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report stock issue">&#9888; Report</a>
+      <button id="refreshBtn" class="btn" type="button" onclick="refreshData()" title="Fetch latest CSV">↻</button>
+      <a id="report" class="btn btn-danger" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report stock issue">&#9888; Report Stock Issues</a>
       <span id="count" class="muted" aria-live="polite"></span>
     </div>
 
@@ -99,13 +99,13 @@
           <li><code>SR1</code> — Store Room 1</li>
           <li><code>SR2</code> — Store Room 2</li>
           <li><code>SR3</code> — Store Room 3</li>
-          <li><code>SR4</code> — Store Room 4</li>
-          <li><code>PAR</code> — Paediatric Assessment Room</li>
-          <li><code>NIC</code> — Nurse-in-Charge Desk (cupboard under desk)</li>
-          <li><code>FB</code> — Fishbowl (middle room)</li>
+          <li><code>SR4</code> — Store Room 4 / PPE Room</li>
+          <li><code>SR-AMB</code> — Store Room at Ambulance bay</li>
+          <li><code>SR-NUM</code> — Store Cupboard beside NUM Office</li>
+          <li><code>PZDR</code> — Paeds Zone Drug Room</li>
           <li><code>PR</code> — Procedure Room</li>
-          <li><code>RESUS1/2/3</code> — Resus Bays 1–3</li>
-          <li><code>C2</code> — C2 Drug Room</li>
+          <li><code>RESUS</code> — Storage Area in front of Resus Bay 3</li>
+          <li><code>SRH</code> — Store Room Hallway, leading to Consultant's Office</li>
           <!-- Add/adjust your own mappings here -->
         </ul>
         <div class="dlg-actions">
@@ -254,4 +254,5 @@
   </script>
 </body>
 </html>
+
 
