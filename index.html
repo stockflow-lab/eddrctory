@@ -8,30 +8,66 @@
   <meta name="robots" content="noindex, nofollow" />
   <style>
     :root{
-      --bg:#f8f9fa; --card:#fff; --txt:#222; --muted:#666; --accent:#0077c8; --border:#e5e5e5; --danger:#c62828; --danger-h:#b71c1c;
+      --bg:#f8f9fa; --card:#fff; --txt:#222; --muted:#666; --accent:#0077c8; --border:#e5e5e5;
+      --danger:#c62828; --danger-h:#b71c1c; --btn-bg:#fff; --btn-bd:#ccc; --btn-bg-h:#f1f1f1;
     }
     *{box-sizing:border-box}
     body{margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--bg); color:var(--txt)}
     .wrap{max-width:800px; margin:0 auto; padding:16px}
     h1{margin:0 0 12px; text-align:center}
     #search{width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:6px}
-    .controls{display:flex; gap:8px; align-items:center; margin:10px 0 6px}
-    .toggle-btn{
-      padding:6px 10px; font-size:14px; border:1px solid #ccc; border-radius:6px; background:#fff; cursor:pointer;
+
+    .controls{
+      display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0 6px;
     }
-    .toggle-btn:active{ transform: translateY(1px); }
+    .btn{
+      padding:6px 10px; font-size:14px; border:1px solid var(--btn-bd); border-radius:6px;
+      background:var(--btn-bg); cursor:pointer; transition:background .2s; text-decoration:none; color:inherit;
+    }
+    .btn:hover{ background:var(--btn-bg-h); }
+    .btn-danger{
+      background:var(--danger); border-color:var(--danger); color:#fff; font-weight:600;
+    }
+    .btn-danger:hover{ background:var(--danger-h); }
+    .muted{color:var(--muted); font-size:.95rem}
+
     #results .item{
       background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin:10px 0;
       box-shadow:0 1px 3px rgba(0,0,0,.04)
     }
     .item strong{color:var(--accent)}
-    .muted{color:var(--muted); font-size:.95rem}
-    .footer{display:flex; justify-content:center; margin:14px 0 6px}
-    #report{
-      display:inline-block; background:var(--danger); color:#fff; padding:6px 10px; font-size:14px; border-radius:4px;
-      text-decoration:none; font-weight:600
+
+    /* Dialogs (Noticeboard + Legend) */
+    dialog{
+      border:none; border-radius:10px; padding:0; width:min(680px, 94vw); max-height:80vh;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
     }
-    #report:hover{ background:var(--danger-h) }
+    dialog::backdrop{ background:rgba(0,0,0,.35); }
+    .dlg-box{ margin:0; padding:16px 16px 12px 16px; }
+    .dlg-box h3{ margin:0 0 6px 0; }
+    .dlg-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+    .dlg-close{
+      background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer;
+    }
+    .dlg-close:hover{ filter:brightness(.95); }
+
+    /* Noticeboard content */
+    .notice-meta{ color:var(--muted); font-size:.9rem; margin:2px 0 8px; }
+    .notice-content{
+      line-height:1.4; color:#333; background:#fff; border:1px solid #eee; border-radius:8px;
+      padding:12px; max-height:55vh; overflow:auto;
+    }
+    .notice-content h1, .notice-content h2, .notice-content h3{ margin-top:1em; }
+    .notice-content ul{ padding-left:1.2em; }
+
+    /* Legend list */
+    .legend-list{ margin:8px 0 16px 0; padding-left:0; list-style:none; max-height:55vh; overflow:auto; }
+    .legend-list li{ padding:6px 0; border-bottom:1px solid #eee; }
+    .legend-list code{
+      background:#eef3f7; padding:2px 6px; border-radius:4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
     @media (max-width:480px){
       h1{font-size:1.4rem}
       #search{padding:10px; font-size:1rem}
@@ -45,22 +81,63 @@
 
     <input id="search" type="text" placeholder="Start typing item name…" />
 
+    <!-- Controls: Toggle, Noticeboard, Legend, Refresh, Report, Count -->
     <div class="controls">
-      <button id="toggleView" class="toggle-btn" type="button">Show full details</button>
+      <button id="toggleView" class="btn" type="button">Show full details</button>
+      <button id="noticeBtn" class="btn" type="button" onclick="showNotices()" title="View announcements">Noticeboard</button>
+      <button id="legendBtn" class="btn" type="button" onclick="showLegend()" title="Location legend">Legend</button>
+      <button id="refreshBtn" class="btn" type="button" onclick="refreshData()" title="Fetch latest CSV">↻ Refresh data</button>
+      <a id="report" class="btn btn-danger" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report stock issue">&#9888; Report</a>
       <span id="count" class="muted" aria-live="polite"></span>
     </div>
 
     <div id="results">Loading inventory…</div>
 
-    <div class="footer">
-      <a id="report" href="https://forms.office.com/Pages/ResponsePage.aspx?id=GXDATCf-i0i7VO7HhXKcYSFxbHmZ_T5AmcEtUzoebmxUNkJDNEdEUEFCTVdJUEI0QU5MU1o0Q1QzVy4u" target="_blank" title="Report shortages, expirations, etc.">&#9888; Report Stock Issues</a>
-    </div>
+    <!-- Noticeboard Dialog -->
+    <dialog id="noticeDialog">
+      <form method="dialog" class="dlg-box">
+        <h3>Noticeboard</h3>
+        <div class="notice-meta">Last updated: <span id="noticeUpdated">—</span></div>
+        <div id="noticeContent" class="notice-content">Loading…</div>
+        <div class="dlg-actions">
+          <button class="dlg-close" value="close" aria-label="Close noticeboard">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Legend Dialog -->
+    <dialog id="legendDialog">
+      <form method="dialog" class="dlg-box">
+        <h3>Location Legend</h3>
+        <ul class="legend-list">
+          <li><code>SR1</code> — Store Room 1</li>
+          <li><code>SR2</code> — Store Room 2</li>
+          <li><code>SR3</code> — Store Room 3</li>
+          <li><code>SR4</code> — Store Room 4</li>
+          <li><code>PAR</code> — Paediatric Assessment Room</li>
+          <li><code>NIC</code> — Nurse-in-Charge Desk (cupboard under desk)</li>
+          <li><code>FB</code> — Fishbowl (middle room)</li>
+          <li><code>PR</code> — Procedure Room</li>
+          <li><code>RESUS1/2/3</code> — Resus Bays 1–3</li>
+          <li><code>C2</code> — C2 Drug Room</li>
+          <!-- Add/adjust your own mappings here -->
+        </ul>
+        <div class="dlg-actions">
+          <button class="dlg-close" value="close" aria-label="Close legend">Close</button>
+        </div>
+      </form>
+    </dialog>
   </div>
 
-  <!-- Robust CSV parsing -->
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <script>
-    const CSV_URL = './directory.csv'; // same folder as this HTML
+    // ===== Config files (same folder) =====
+    const CSV_URL = './directory.csv';
+    const NOTICES_URL = './notices.md';
+
     const resultsEl = document.getElementById('results');
     const searchEl  = document.getElementById('search');
     const toggleBtn = document.getElementById('toggleView');
@@ -68,49 +145,38 @@
 
     let rows = [];
     let viewMode = localStorage.getItem('viewMode') || 'compact'; // 'compact' | 'full'
+    let noticesLoaded = false;
 
     // Helpers to find columns by name pattern
     function getColumn(obj, regex, fallbackKey) {
       return Object.keys(obj).find(k => regex.test(k)) || fallbackKey;
     }
 
-    // Compact: Item Name + Location only (Location header required/preferred)
+    // Compact: Item Name + Location only (prefers exact "Location")
     function renderCompact(r) {
       const keys = Object.keys(r);
       const nameKey = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
       const locKey  = getColumn(r, /^location$/i, keys.find(k => k !== nameKey) || keys[1]);
-
       const name = (r[nameKey] || '').toString().trim();
       const loc  = (r[locKey]  || '').toString().trim();
-
       return `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
     }
 
-    // Full: all non-empty columns, with icons for known fields
+    // Full: all non-empty columns, with icons where sensible
     function renderFull(r) {
       const nonEmptyKeys = Object.keys(r).filter(k => (r[k] ?? '').toString().trim() !== '');
       if (!nonEmptyKeys.length) return '';
-
       const nameKey = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
       let html = `<strong>${r[nameKey]}</strong><br/>`;
-
       nonEmptyKeys.forEach(k => {
         if (k === nameKey) return;
         const val = r[k];
-
-        if (/^location$/i.test(k)) {
-          html += `📍 ${val}<br/>`;
-        } else if (/note/i.test(k)) {
-          html += `📝 ${val}<br/>`;
-        } else if (/exp(ir(y|ation)|date)/i.test(k)) {
-          html += `⏳ ${k}: ${val}<br/>`;
-        } else if (/stock|qty|quantity|count/i.test(k)) {
-          html += `📦 ${k}: ${val}<br/>`;
-        } else {
-          html += `${k}: ${val}<br/>`;
-        }
+        if (/^location$/i.test(k)) html += `📍 ${val}<br/>`;
+        else if (/note/i.test(k)) html += `📝 ${val}<br/>`;
+        else if (/exp(ir(y|ation)|date)/i.test(k)) html += `⏳ ${k}: ${val}<br/>`;
+        else if (/stock|qty|quantity|count/i.test(k)) html += `📦 ${k}: ${val}<br/>`;
+        else html += `${k}: ${val}<br/>`;
       });
-
       return html;
     }
 
@@ -118,7 +184,6 @@
       resultsEl.innerHTML = '';
       countEl.textContent = list.length ? `${list.length} item${list.length!==1?'s':''}` : '';
       if (!list.length) { resultsEl.textContent = 'No results found.'; return; }
-
       list.forEach(r => {
         const div = document.createElement('div');
         div.className = 'item';
@@ -136,15 +201,26 @@
       toggleBtn.textContent = (viewMode === 'full') ? 'Show compact view' : 'Show full details';
     }
 
-    // Load CSV (with cache-buster)
-    fetch(CSV_URL + '?v=' + Date.now())
-      .then(r => r.text())
-      .then(text => {
-        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-        rows = parsed.data;
-        render(rows);
-      })
-      .catch(() => { resultsEl.textContent = 'Failed to load inventory.'; });
+    // Initial CSV load (cache-busted)
+    function loadCSV() {
+      return fetch(CSV_URL + '?v=' + Date.now())
+        .then(r => r.text())
+        .then(text => {
+          const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+          rows = parsed.data;
+          const q = (searchEl.value || '');
+          render(q ? filterRows(q) : rows);
+        });
+    }
+
+    // Refresh button
+    function refreshData(){
+      loadCSV()
+        .catch(() => { alert('Could not refresh data right now.'); });
+    }
+
+    // Start
+    loadCSV().catch(() => { resultsEl.textContent = 'Failed to load inventory.'; });
 
     // Search as you type
     searchEl.addEventListener('input', (e) => {
@@ -161,6 +237,69 @@
       render(q ? filterRows(q) : rows);
       updateToggleText();
     });
+
+    // ===== Noticeboard (Markdown file with timestamp) =====
+    function formatLocal(dt) {
+      try { return new Date(dt).toLocaleString(); } catch { return ''; }
+    }
+    function extractUpdatedFromMarkdown(md) {
+      const m = md.match(/^\s*(?:_|[*])?\s*Last\s+updated:\s*(.+)$/im);
+      return m ? m[1].trim() : '';
+    }
+
+    function showNotices(){
+      const dlg = document.getElementById('noticeDialog');
+      const box = document.getElementById('noticeContent');
+      const updatedEl = document.getElementById('noticeUpdated');
+
+      if (!dlg.showModal) {
+        alert('Noticeboard requires a modern browser.');
+        return;
+      }
+
+      if (!noticesLoaded) {
+        fetch(NOTICES_URL + '?v=' + Date.now())
+          .then(r => {
+            const headerLM = r.headers.get('Last-Modified') || '';
+            return r.text().then(md => ({ md, headerLM }));
+          })
+          .then(({ md, headerLM }) => {
+            const fromFile = extractUpdatedFromMarkdown(md);
+            const stamp = fromFile || formatLocal(headerLM) || formatLocal(Date.now());
+            updatedEl.textContent = stamp || '—';
+            box.innerHTML = marked.parse(md || '_No current notices._');
+            noticesLoaded = true;
+            dlg.showModal();
+          })
+          .catch(() => {
+            updatedEl.textContent = '—';
+            box.textContent = 'Unable to load notices at this time.';
+            dlg.showModal();
+          });
+      } else {
+        dlg.showModal();
+      }
+    }
+
+    // Close dialogs by clicking backdrop (outside the content)
+    ;(function(){
+      ['noticeDialog','legendDialog'].forEach(id => {
+        const dlg = document.getElementById(id);
+        if (!dlg) return;
+        dlg.addEventListener('click', (e) => {
+          const rect = dlg.getBoundingClientRect();
+          const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                        e.clientY >= rect.top && e.clientY <= rect.bottom;
+          if (!inside) dlg.close();
+        });
+      });
+    })();
+
+    // Legend open
+    function showLegend(){
+      const dlg = document.getElementById('legendDialog');
+      if (dlg && dlg.showModal) dlg.showModal();
+    }
   </script>
 </body>
 </html>
