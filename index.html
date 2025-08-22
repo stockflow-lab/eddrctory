@@ -17,6 +17,9 @@
     h1{margin:0 0 12px; text-align:center}
     #search{width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:6px}
 
+    /* Red alert text (shows in both compact and full views) */
+    .alert-text{ color:#c62828; font-weight:600; }
+
     .controls{
       display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0 6px;
     }
@@ -129,6 +132,10 @@
     const searchEl  = document.getElementById('search');
     const toggleBtn = document.getElementById('toggleView');
     const countEl   = document.getElementById('count');
+   
+    // Columns to search but NOT display (e.g., alternate names)
+    const HIDDEN_COLUMNS_REGEX = /^(tags|aliases|aka|search\s*tags?)$/i;
+
 
     let rows = [];
     let viewMode = localStorage.getItem('viewMode') || 'compact'; // 'compact' | 'full'
@@ -148,26 +155,35 @@
     }
 
     // Compact: Item Name + Location only (prefers exact "Location")
-    function renderCompact(r) {
-      const HIDDEN_COLUMNS_REGEX = /^(tags|aliases|aka|search\s*tags?)$/i;
-      const keys = Object.keys(r);
-      const nameKey = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
-      const locKey  = getColumn(r, /^location$/i, keys.find(k => k !== nameKey) || keys[1]);
-      const name = (r[nameKey] || '').toString().trim();
-      const loc  = (r[locKey]  || '').toString().trim();
-      return `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
-    }
+   function renderCompact(r) {
+  const keys     = Object.keys(r);
+  const nameKey  = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
+  const locKey   = getColumn(r, /^location$/i, keys.find(k => k !== nameKey) || keys[1]);
+  const alertKey = getColumn(r, /^alerts?$/i, null);
+
+  const name  = (r[nameKey]  || '').toString().trim();
+  const loc   = (r[locKey]   || '').toString().trim();
+  const alert = alertKey ? (r[alertKey] || '').toString().trim() : '';
+
+  return `<strong>${name}</strong><br/>
+          📍 ${loc || 'Unknown'}${alert ? `<br/><span class="alert-text">⚠ ${alert}</span>` : ''}`;
+}
 
     function renderFull(r) {
   const nonEmptyKeys = Object.keys(r).filter(k => (r[k] ?? '').toString().trim() !== '');
   if (!nonEmptyKeys.length) return '';
 
-  const nameKey = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
+  const nameKey  = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
+  const alertKey = nonEmptyKeys.find(k => /^alerts?$/i.test(k));
+  const alert    = alertKey ? (r[alertKey] || '').toString().trim() : '';
+
   let html = `<strong>${r[nameKey]}</strong><br/>`;
+  if (alert) html += `<span class="alert-text">⚠ ${alert}</span><br/>`;
 
   nonEmptyKeys.forEach(k => {
     if (k === nameKey) return;
-    if (HIDDEN_COLUMNS_REGEX.test(k)) return; // 🔒 hide Tags/Aliases from display
+    if (/^alerts?$/i.test(k)) return;              // avoid repeating the alert line
+    if (HIDDEN_COLUMNS_REGEX.test(k)) return;      // hide search-only columns (e.g., Tags/Aliases)
 
     const val = r[k];
     if (/^location$/i.test(k)) html += `📍 ${val}<br/>`;
@@ -259,6 +275,7 @@
   </script>
 </body>
 </html>
+
 
 
 
