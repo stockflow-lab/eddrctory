@@ -149,6 +149,7 @@
 
     // Compact: Item Name + Location only (prefers exact "Location")
     function renderCompact(r) {
+      const HIDDEN_COLUMNS_REGEX = /^(tags|aliases|aka|search\s*tags?)$/i;
       const keys = Object.keys(r);
       const nameKey = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
       const locKey  = getColumn(r, /^location$/i, keys.find(k => k !== nameKey) || keys[1]);
@@ -157,23 +158,27 @@
       return `<strong>${name}</strong><br/>📍 ${loc || 'Unknown'}`;
     }
 
-    // Full: all non-empty columns, with icons where sensible
     function renderFull(r) {
-      const nonEmptyKeys = Object.keys(r).filter(k => (r[k] ?? '').toString().trim() !== '');
-      if (!nonEmptyKeys.length) return '';
-      const nameKey = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
-      let html = `<strong>${r[nameKey]}</strong><br/>`;
-      nonEmptyKeys.forEach(k => {
-        if (k === nameKey) return;
-        const val = r[k];
-        if (/^location$/i.test(k)) html += `📍 ${val}<br/>`;
-        else if (/note/i.test(k)) html += `📝 ${val}<br/>`;
-        else if (/exp(ir(y|ation)|date)/i.test(k)) html += `⏳ ${k}: ${val}<br/>`;
-        else if (/stock|qty|quantity|count/i.test(k)) html += `📦 ${k}: ${val}<br/>`;
-        else html += `${k}: ${val}<br/>`;
-      });
-      return html;
-    }
+  const nonEmptyKeys = Object.keys(r).filter(k => (r[k] ?? '').toString().trim() !== '');
+  if (!nonEmptyKeys.length) return '';
+
+  const nameKey = nonEmptyKeys.find(k => /^(item.*name|^name$)/i.test(k)) || nonEmptyKeys[0];
+  let html = `<strong>${r[nameKey]}</strong><br/>`;
+
+  nonEmptyKeys.forEach(k => {
+    if (k === nameKey) return;
+    if (HIDDEN_COLUMNS_REGEX.test(k)) return; // 🔒 hide Tags/Aliases from display
+
+    const val = r[k];
+    if (/^location$/i.test(k)) html += `📍 ${val}<br/>`;
+    else if (/note/i.test(k)) html += `📝 ${val}<br/>`;
+    else if (/exp(ir(y|ation)|date)/i.test(k)) html += `⏳ ${k}: ${val}<br/>`;
+    else if (/stock|qty|quantity|count/i.test(k)) html += `📦 ${k}: ${val}<br/>`;
+    else html += `${k}: ${val}<br/>`;
+  });
+
+  return html;
+}
 
     function render(list) {
       resultsEl.innerHTML = '';
@@ -254,6 +259,7 @@
   </script>
 </body>
 </html>
+
 
 
 
