@@ -25,10 +25,7 @@ Do not include sensitive or patient-identifiable information.
 ## GitHub Pages URL
 https://github.com/stockflow-lab/eddrctory/blob/main/Index1.html
 
-
-## QR Code
-Generate a QR code pointing to the URL above for staff convenience.
-
 ## License
 
 Internal hospital use only.
+
