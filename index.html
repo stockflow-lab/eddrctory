@@ -17,7 +17,7 @@
     h1{margin:0 0 12px; text-align:center}
     #search{width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:6px}
 
-    /* Red alert text (shows in both compact and full views) */
+    /* Red alert text */
     .alert-text{ color:#c62828; font-weight:600; }
 
     .controls{
@@ -126,7 +126,7 @@
   <script src="./papaparse.min.js"></script>
 
   <script>
-    // ===== Config (same folder) =====
+    // ===== Config =====
     const CSV_URL = './directory.csv';
 
     const resultsEl = document.getElementById('results');
@@ -134,7 +134,7 @@
     const toggleBtn = document.getElementById('toggleView');
     const countEl   = document.getElementById('count');
    
-    // Columns to search but NOT display (e.g., alternate names)
+    // Columns to search but NOT display 
     const HIDDEN_COLUMNS_REGEX = /^(tags|aliases|aka|search\s*tags?)$/i;
 
 
@@ -155,7 +155,7 @@
       return Object.keys(obj).find(k => regex.test(k)) || fallbackKey;
     }
 
-    // Compact: Item Name + Location only (prefers exact "Location")
+    // Compact: Item Name + Location only
    function renderCompact(r) {
   const keys     = Object.keys(r);
   const nameKey  = getColumn(r, /^(item.*name|^name$)/i, keys[0]);
@@ -276,6 +276,7 @@
   </script>
 </body>
 </html>
+
 
 
 
