@@ -102,7 +102,7 @@ SR1 5-B,Colorimetric CO2 Detector - Adult,,,end tidal,
 SR1 5-B,Disposable Scalpel and Blade 10,,,,
 SR1 5-B,IV Cannula 14G (Bbraun Introcan),,,IVC,
 SR1 5-C,ETCO2 Filterline (ETT),,,end tidal,
-SR1 5-D,ETCO2 Filterline (Nasal Prong),,,end tidal,"22/08: On backorder, no ETA"
+SR1 5-D,ETCO2 Filterline (Nasal Prong),,,end tidal,
 SR1 5-E,Expiratory Valve Draeger,,,,
 SR1 5-F,Oxylog Circuits - Paediatric,,,,
 SR1 5-G,Infinity Paediatric Ventilator Dual Heated Circuit,,,"airway, ventilation, mechvent, mechanical, paediatric",
@@ -600,4 +600,5 @@ SR-NUM 32-G,Ring Cutter Blades,,,,
 FSHBWL,"Paediatric Soft Collar, Small",In cupboard opposite Cubicle 16,,,
 FSHBWL,"Paediatric Soft Collar, Medium",In cupboard opposite Cubicle 16,,,
 FSHBWL,"Paediatric Soft Collar, Large",In cupboard opposite Cubicle 16,,,
+
 
